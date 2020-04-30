@@ -1,0 +1,68 @@
+= @dotcircle/transformer-asciidoc
+v0.0.1, April 30, 2020
+
+> Asciidoc transformer for Gridsome with link:https://asciidoctor.org/docs/asciidoctor.js/[Asciidoc.js].
+
+This transformer is heavily based on the
+link:https://github.com/gridsome/gridsome/tree/master/packages/transformer-remark[@gridsome/transformer-remark]
+transformer, in fact it uses there code as a starting point.
+
+== Install
+
+- `yarn add @dotcircle/transformer-asciidoc`
+- `npm install @dotcircle/transformer-asciidoc`
+
+== Basic usage
+
+The transformer is automatically used if installed in your project. Custom transformer options can either be set for
+each source plugin or globally.
+
+[source, js]
+----
+//gridsome.config.js
+module.exports = {
+  plugins: [
+    {
+      use: '@gridsome/source-filesystem',
+      options: {
+        path: 'blog/**/*.adoc',
+        typeName: 'Post',
+        route: '/blog/:doctitle',
+        asciidoc: {
+          // asciidoc options
+        }
+      }
+    }
+  ],
+  transformers: {
+    asciidoc: {
+      // global asciidoc options
+    }
+  }
+}
+----
+
+To exclude partials, add a ignore option to the path parameter.
+
+[source, js]
+----
+//gridsome.config.js
+module.exports = {
+  plugins: [
+    {
+      use: '@gridsome/source-filesystem',
+      options: {
+        /*
+         * Ignoring the content/blog/_partials directory
+         * Note that the order is important and the ignore in this case should come after the include glob.
+         * If the include glob would come last, it would include the _partials again
+         */
+        path: ['content/blog/**/*.adoc', '!content/blog/_partials/**/*'],
+        typeName: 'Blog',
+        route: '/blog/:doctitle',
+        asciidoc: {},
+      },
+    }
+  ]
+}
+----

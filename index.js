@@ -1,18 +1,14 @@
 const LRU = require('lru-cache')
-const unified = require('unified')
-const parse = require('gray-matter')
-const remarkHtml = require('remark-html')
-const remarkParse = require('remark-parse')
+const Asciidoctor = require('asciidoctor')
 const sanitizeHTML = require('sanitize-html')
 const { words, defaultsDeep } = require('lodash')
+const path = require('path')
 
 const cache = new LRU({ max: 1000 })
+const asciidoctor = Asciidoctor()
 
 const {
   cacheKey,
-  createFile,
-  findHeadings,
-  createPlugins
 } = require('./lib/utils')
 
 const {
@@ -27,31 +23,41 @@ const {
   GraphQLBoolean
 } = require('gridsome/graphql')
 
-class RemarkTransformer {
+class AsciidocTransformer {
   static mimeTypes () {
-    return ['text/markdown', 'text/x-markdown']
+    return [
+      'text/asciidoc',
+      'text/x-asciidoc',
+      'application/asciidoc',
+      'application/x-asciidoc',
+      'text/adoc',
+      'text/x-adoc',
+      'application/adoc',
+      'application/x-adoc'
+    ]
   }
 
   constructor (options, context) {
     const { localOptions, resolveNodeFilePath } = context
+    const defaultOptions = {
+      backend: 'html5',
+      parse: true,
+      safe: 'safe',
+    }
 
-    this.options = defaultsDeep(localOptions, options)
-    this.processor = this.createProcessor(localOptions)
+    this.options = defaultsDeep(localOptions, options, defaultOptions)
     this.resolveNodeFilePath = resolveNodeFilePath
     this.assets = context.assets || context.queue
   }
 
   parse (source) {
-    const { data, content, excerpt } = parse(source, this.options.grayMatter || {})
+    const doc = asciidoctor.load(source, this.options)
+    const docTitle = doc.getDocumentTitle({ partition: true })
+    const excerpt = docTitle.getCombined()
 
-    // if no title was found by gray-matter,
-    // try to find the first one in the content
-    if (!data.title) {
-      const title = content.trim().match(/^#+\s+(.*)/)
-      if (title) data.title = title[1]
-    }
+    const data = doc.getAttributes()
 
-    return { content, excerpt, ...data }
+    return { source, excerpt, ...data }
   }
 
   extendNodeType () {
@@ -72,21 +78,16 @@ class RemarkTransformer {
 
           if (!headings) {
             const ast = await this._nodeToAST(node)
-            headings = findHeadings(ast)
+            headings = []
+            Object.values(ast.getRefs()).forEach(h => headings.push({
+              depth: h.level,
+              value: h.title,
+              anchor: h.id
+            }))
             cache.set(key, headings)
           }
 
           return headings
-            .filter(heading =>
-              typeof depth === 'number' ? heading.depth === depth : true
-            )
-            .map(heading => ({
-              depth: heading.depth,
-              anchor: heading.anchor,
-              value: stripTags
-                ? heading.value.replace(/(<([^>]+)>)/ig, '')
-                : heading.value
-            }))
         }
       },
       timeToRead: {
@@ -120,26 +121,13 @@ class RemarkTransformer {
     }
   }
 
-  createProcessor (options = {}) {
-    const processor = unified().data('transformer', this)
-    const plugins = createPlugins(this.options, options)
-    const config = this.options.config || {}
-
-    return processor
-      .use(remarkParse, config)
-      .use(plugins)
-      .use(options.stringifier || remarkHtml)
-  }
-
   _nodeToAST (node) {
     const key = cacheKey(node, 'ast')
     let cached = cache.get(key)
 
     if (!cached) {
-      const file = createFile(node)
-      const ast = this.processor.parse(file)
+      cached = asciidoctor.load(node.source, {...this.options, base_dir: path.dirname(node.fileInfo.path)})
 
-      cached = this.processor.run(ast, file)
       cache.set(key, cached)
     }
 
@@ -152,10 +140,9 @@ class RemarkTransformer {
 
     if (!cached) {
       cached = (async () => {
-        const file = createFile(node)
         const ast = await this._nodeToAST(node)
 
-        return this.processor.stringify(ast, file)
+        return ast.convert({...this.options, base_dir: path.dirname(node.fileInfo.path)})
       })()
 
       cache.set(key, cached)
@@ -165,4 +152,4 @@ class RemarkTransformer {
   }
 }
 
-module.exports = RemarkTransformer
+module.exports = AsciidocTransformer
