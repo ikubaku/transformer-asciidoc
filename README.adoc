@@ -42,7 +42,7 @@ module.exports = {
 }
 ----
 
-To exclude partials, add a ignore option to the path parameter.
+To exclude partials, add an ignore option to the path parameter.
 
 [source, js]
 ----
@@ -64,5 +64,34 @@ module.exports = {
       },
     }
   ]
+}
+----
+
+=== Syntax Highlighting
+
+By default, the asciidoc transformer uses
+link:https://github.com/oncletom/asciidoctor-prism-extension[asciidoctor-prism-extension] to enable code highlighting.
+
+There is no stylesheet loaded automatically. You can bring your own css, or include one of the prism ones.
+They can be included in the `main.js` any of your global css stylesheets or in the template, whichever you prefer.
+
+.including a prism stylesheet globally in `main.js`
+[source, js]
+----
+import 'prismjs/themes/prism.css';
+----
+
+To disable the default prism syntax highlighter, set the global transformer option `asciidoc.prism` to `false`
+
+.disable prism syntax highlighting
+[source, js]
+----
+module.exports = {
+  transformers: {
+    // global asciidoc options
+    asciidoc: {
+      prism: false,
+    },
+  }
 }
 ----

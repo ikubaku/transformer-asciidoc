@@ -3,6 +3,7 @@ const Asciidoctor = require('asciidoctor')
 const sanitizeHTML = require('sanitize-html')
 const { words, defaultsDeep } = require('lodash')
 const path = require('path')
+const prismExtension = require('asciidoctor-prism-extension')
 
 const cache = new LRU({ max: 1000 })
 const asciidoctor = Asciidoctor()
@@ -43,11 +44,20 @@ class AsciidocTransformer {
       backend: 'html5',
       parse: true,
       safe: 'safe',
+      prism: true,
+      attributes: {
+        'source-highlighter': 'prism',
+        'prism-languages': 'markup,html,xml,svg,mathml,css,clike,javascript,js,ada,apacheconf,applescript,arduino,asciidoc,adoc,aspnet,bash,shell,batch,bison,brightscript,c,csharp,cs,dotnet,cpp,coffeescript,coffee,cmake,clojure,css-extras,d,dart,diff,django,jinja2,dns-zone,docker,dockerfile,elixir,elm,erb,erlang,xlsx,xls,fsharp,fortran,gcode,git,glsl,go,graphql,groovy,haml,handlebars,haskell,hs,hcl,http,hpkp,hsts,icon,ini,io,java,javadoc,javadoclike,jq,jsdoc,json,jsonp,json5,julia,kotlin,latex,tex,context,latte,less,llvm,lua,makefile,markdown,md,matlab,nasm,neon,nginx,objectivec,ocaml,opencl,parser,pascal,objectpascal,perl,php,phpdoc,php-extras,plsql,powerquery,pq,powershell,processing,properties,protobuf,pug,puppet,pure,python,py,q,qml,r,jsx,tsx,reason,regex,rest,ruby,rb,rust,sas,sass,scss,scala,scheme,shell-session,solidity,solution-file,sln,soy,splunk-spl,sql,stylus,swift,tap,tcl,textile,toml,turtle,trig,twig,typescript,ts,vala,vbnet,velocity,verilog,vhdl,vim,visual-basic,vb,wasm,wiki,xeora,xeoracube,xojo,xquery,yaml,yml,zig'
+      }
     }
 
     this.options = defaultsDeep(localOptions, options, defaultOptions)
     this.resolveNodeFilePath = resolveNodeFilePath
     this.assets = context.assets || context.queue
+
+    if (this.options.prism) {
+      asciidoctor.SyntaxHighlighter.register('prism', prismExtension)
+    }
   }
 
   parse (source) {
