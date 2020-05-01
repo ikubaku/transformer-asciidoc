@@ -51,7 +51,9 @@ class AsciidocTransformer {
   }
 
   parse (source) {
-    const doc = asciidoctor.load(source, this.options)
+    // we override the safe option to exclude external includes as we cannot set the base_dir here and resolving those
+    // includes would print an error to the console
+    const doc = asciidoctor.load(source, {...this.options, safe: 'secure'})
     const docTitle = doc.getDocumentTitle({ partition: true })
     const excerpt = docTitle.getCombined()
 
