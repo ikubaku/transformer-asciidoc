@@ -85,6 +85,10 @@ class AsciidocTransformer {
         type: GraphQLString,
         resolve: node => this._nodeToHTML(node)
       },
+      stem: {
+        type: GraphQLString,
+        resolve: node => node.stem
+      },
       headings: {
         type: new GraphQLList(HeadingType),
         args: {
