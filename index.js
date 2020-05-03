@@ -72,9 +72,66 @@ class AsciidocTransformer {
     // includes would print an error to the console
     const doc = asciidoctor.load(source, {...this.options, safe: 'secure'})
     const docTitle = doc.getDocumentTitle({ partition: true })
-    const excerpt = docTitle.getCombined()
+    const revisionInfo = doc.getRevisionInfo()
 
-    const data = doc.getAttributes()
+    const attributes = doc.getAttributes()
+
+    let dateString = revisionInfo.getDate();
+    if (!dateString.match(/[-+]\d{2,4}/)) {
+      dateString = dateString + " GMT"
+    }
+
+    const preamble = doc.blocks[0] && doc.blocks[0].blocks[0] && doc.blocks[0].blocks[0].getSource();
+    let excerpt = preamble || attributes.description || "";
+
+    const authorlist = []
+    Object.entries(attributes).sort((a, b) => b[0].localeCompare(a[0])).forEach(item => {
+      if (item[0].startsWith('author_')) {
+        const index = item[0].split('_')[1]
+        authorlist.push({
+          author: attributes[`author_${index}`] || '',
+          email: attributes[`email_${index}`] || '',
+          firstname: attributes[`firstname_${index}`] || '',
+          lastname: attributes[`lastname_${index}`] || '',
+          middlename: attributes[`middlename_${index}`] || '',
+          authorinitials: attributes[`authorinitials_${index}`] || '',
+        })
+        delete attributes[`author_${index}`]
+        delete attributes[`email_${index}`]
+        delete attributes[`firstname_${index}`]
+        delete attributes[`lastname_${index}`]
+        delete attributes[`middlename_${index}`]
+        delete attributes[`authorinitials_${index}`]
+      }
+    })
+
+    if (authorlist.length === 0) {
+      authorlist.push({
+        author: attributes.author || '',
+        email: attributes.email || '',
+        firstname: attributes.firstname || '',
+        lastname: attributes.lastname || '',
+        middlename: attributes.middlename || '',
+        authorinitials: attributes.authorinitials || '',
+      })
+    }
+
+    delete attributes.author
+    delete attributes.email
+    delete attributes.firstname
+    delete attributes.lastname
+    delete attributes.middlename
+    delete attributes.authorinitials
+
+    const data = {
+      ...attributes,
+      title: docTitle.getMain(),
+      subtitle: docTitle.getSubtitle(),
+      preamble,
+      revnumber: Number(revisionInfo.getNumber()),
+      revdate: new Date(dateString),
+      authorlist,
+    }
 
     return { source, excerpt, ...data }
   }
