@@ -9,8 +9,8 @@ transformer, in fact it uses there code as a starting point.
 
 == Install
 
-- `yarn add @dotcircle/transformer-asciidoc`
-- `npm install @dotcircle/transformer-asciidoc`
+- `yarn add @dotcircle/transformer-asciidoc @gridsome/source-filesystem`
+- `npm install @dotcircle/transformer-asciidoc @gridsome/source-filesystem`
 
 == Basic usage
 
@@ -37,12 +37,16 @@ module.exports = {
   transformers: {
     asciidoc: {
       // global asciidoc options
+      safe: 'unsafe', // unsafe, safe, server or secure
+      icons: 'font',
     }
   }
 }
 ----
 
 To exclude partials, add an ignore option to the path parameter.
+
+If you specify `icons: font`, make sure to have font-awesome available.
 
 [source, js]
 ----
@@ -94,4 +98,222 @@ module.exports = {
     },
   }
 }
+----
+
+=== Images
+
+This transformer -unlike the markdown one- doesn't currently support transformations or lazy loading of images. Nor does
+it add images using a file resolver. Images must be placed in the static folder of gridsome so they can be included in
+the build output.
+
+A global asciidoc attribute can be specified to set the root directory of the images, to make the links in each document
+shorter.
+
+In this example, static images are located in the directory `$GridsomeRoot/static/assets/img/` +
+Asciidoc documents can reference images relative to this path, if the `imagesdir` attribute is set correctly.
+
+.gridsome.config.js
+[source, js]
+----
+module.exports = {
+  transformers: {
+    asciidoc: {
+      attributes: {
+        imagesdir: '/assets/img',
+      }
+    }
+  }
+}
+----
+
+.asciidoc source file
+[source, adoc]
+----
+= Document
+
+image::sunset.jpg[]
+----
+
+== Plugins
+
+Plugins can be added to the asciidoc-transformer by listing them in the `transformer.asciidoc.plugins` array.
+
+.gridsome.config.js
+[source, js]
+----
+module.exports = {
+  transformers: {
+    asciidoc: {
+      plugins: [
+        'asciidoctor-kroki',
+        'asciidoctor-emoji',
+        'asciidoctor-katex',
+      ],
+    },
+  }
+}
+----
+
+=== Diagrams
+
+The link:https://github.com/mogztter/asciidoctor-kroki/[asciidoctor-kroki] plugin enables asciidoc to render diagrams
+using link:https://kroki.io/[Kroki].
+
+Install asciidoctor-kroki by running `yarn add asciidoctor-kroki` or `npm install asciidoctor-kroki`.
+
+.example
+[source, adoc]
+----
+= Kroki diagrams
+
+== Plantuml
+
+[plantuml,alice-bob,role=sequence,opts=inline] <1>
+....
+alice -> bob
+....
+
+== Graphviz
+
+[graphviz] <2>
+....
+digraph foo {
+  node [style=rounded]
+  node1 [shape=box]
+  node2 [fillcolor=yellow, style="rounded,filled", shape=diamond]
+  node3 [shape=record, label="{ a | b | c }"]
+
+  node1 -> node2 -> node3
+}
+....
+----
+<1> Generate a plantuml diagram and inline svg the image in the page
+<2> Generate a graphviz diagram and reference it on kroki.io.
+
+By default the extension send and receives information from link:https://kroki.io[]. You can specify you own server by
+setting the `kroki-server-url` attribute. This can be at the top of a document, or in the global `gridsome.config.js`
+`transformers.asiidoc.attributes`.
+
+`:kroki-server-url: http://my-server-url:port`
+
+When setting the `opts=inline` block attribute (see <1> in the example above), an inline svg will be inserted into the
+html page. Please note that in order to use the inline svg images, you need to set the attribute `allow-uri-read`.
+
+=== KaTeX
+
+The link:https://github.com/jirutka/asciidoctor-katex[asciidoctor-katex] plugin enables latexmath in your web pages.
+
+Install asciidoctor-katex by running `yarn add asciidoctor-katex` or `npm install asciidoctor-katex`.
+
+The KaTeX stylesheet must also be included:
+
+[source, css]
+----
+@import '~katex/dist/katex.css';
+----
+
+.example
+[source, adoc]
+----
+= KaTeX math
+:stem: latexmath <1>
+
+.Mass–energy equivalence
+[latexmath]
+++++
+E = mc^2
+++++
+
+.summation notation
+[latexmath]
+++++
+\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)
+++++
+----
+<1> The `stem` attribute must be set to `latexmath` in order for katex to be able to do its job.
+
+=== Emoji
+
+The link:https://github.com/mogztter/asciidoctor-emoji[asciidoctor-emoji] plugin enables svg emoji icons in documents.
+
+Install asciidoctor-emoji by running `yarn add asciidoctor-emoji` or `npm install asciidoctor-emoji`.
+
+.example
+[source, adoc]
+----
+= Emoji support
+
+emoji:heart[]
+
+An emoji 5x the size emoji:bear[5x]
+----
+
+Under the hood, asciidoctor-emoji uses the
+link:https://blog.twitter.com/developer/en_us/a/2014/open-sourcing-twitter-emoji-for-everyone.html[Twemoji from Twitter].
+The extension converts the emoji tag to an `<image>` tag that points to a remote SVG.
+
+A list of supported emoji tags can be found on the
+link:https://github.com/Mogztter/asciidoctor-emoji/blob/master/src/twemoji-map.js[asciidoc-emoji] website.
+
+=== Charts
+
+The link:https://github.com/mogztter/asciidoctor-chart[asciidoctor-chart] plugin enables you to embed chart.js charts on
+the web page.
+
+Install asciidoctor-chart by running `yarn add asciidoctor-chart` or `npm install asciidoctor-chart`.
+
+.example
+[source, adoc]
+----
+= Charts
+
+[chart,line]
+....
+January,February,March
+28,48,40
+65,59,80
+....
+----
+
+Make sure to read the documentation on their website as it contains essential information to the working of this plugin,
+but essentially you need to include the chartist css and javascript files in the page.
+
+To do this in a Gridsome template vue file, you could do something like this:
+
+.template.vue
+[source, markup]
+----
+<script>
+export default {
+mounted() {
+    const Chartist = require('chartist');
+    const charts = document.querySelectorAll(".ct-chart");
+    charts.forEach((node) => {
+      const options = {
+        height: node.dataset['chartHeight'],
+        width: node.dataset['chartWidth'],
+        colors: node.dataset['chartColors'].split(','),
+      };
+      const dataset = Object.assign({}, node.dataset);
+      const series = Object.values(Object.keys(dataset)
+        .filter((key) => key.startsWith('chartSeries-'))
+        .reduce((obj, key) => {
+          obj[key] = dataset[key];
+          return obj;
+        }, {})).map((value) => value.split(','));
+      const data = {
+        labels: node.dataset['chartLabels'].split(','),
+        series: series,
+      };
+      Chartist[node.dataset['chartType']](node, data, options);
+    });
+  }
+}
+</script>
+
+<style lang="scss">
+  .ct-chart {
+    @import "~chartist/dist/chartist.min.css";
+  }
+</style>
 ----
