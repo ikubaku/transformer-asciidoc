@@ -59,7 +59,7 @@ class AsciidocTransformer {
       asciidoctor.SyntaxHighlighter.register('prism', prismExtension)
     }
 
-    const plugins = options.useBuiltIns === false ? [] : options.plugins
+    const plugins = options.useBuiltIns === false ? [] : options.plugins || []
     plugins.forEach(plugin => {
       const p = require(plugin);
       p.register(asciidoctor.Extensions)

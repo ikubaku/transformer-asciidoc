@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See link:https://conventionalcommits.org[Conventional Commit] for commit guidelines.
 
+== unreleased
+
+=== Fixes
+
+- Make options.plugins optional and gracefully handle the when there are no plugins specified.
+
+
 == 0.0.1 (2020-04-30)
 
 === Features
