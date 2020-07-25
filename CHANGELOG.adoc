@@ -8,6 +8,7 @@ See link:https://conventionalcommits.org[Conventional Commit] for commit guideli
 === Fixes
 
 - Make options.plugins optional and gracefully handle the when there are no plugins specified.
+- Handle the revDate when none can be found in the document.
 
 
 == 0.0.1 (2020-04-30)

@@ -77,7 +77,7 @@ class AsciidocTransformer {
     const attributes = doc.getAttributes()
 
     let dateString = revisionInfo.getDate();
-    if (!dateString.match(/[-+]\d{2,4}/)) {
+    if (dateString && !dateString.match(/[-+]\d{2,4}/)) {
       dateString = dateString + " GMT"
     }
 
@@ -129,7 +129,7 @@ class AsciidocTransformer {
       subtitle: docTitle.getSubtitle(),
       preamble,
       revnumber: Number(revisionInfo.getNumber()),
-      revdate: new Date(dateString),
+      revdate: dateString ? new Date(dateString) : null,
       authorlist,
     }
 
