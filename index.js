@@ -81,7 +81,15 @@ class AsciidocTransformer {
       dateString = dateString + " GMT"
     }
 
-    const preamble = doc.blocks[0] && doc.blocks[0].blocks[0] && doc.blocks[0].blocks[0].getSource();
+    // BUG: もともとの処理（以下）だとgetSourceがundefinedのことがあるのでTypeErrorになる．
+    // おそらくテキストが入っていないBlock（リストなど）なので，getSourceがメンバにない．
+    //const preamble = doc.blocks[0] && doc.blocks[0].blocks[0] && doc.blocks[0].blocks[0].getSource();
+    // TODO: 良い感じに段落以外のBlockからpreambleを生成したい
+    let leafBlock = doc;
+    while (leafBlock.hasBlocks()) {
+      leafBlock = leafBlock.blocks[0]
+    }
+    const preamble = leafBlock.getContent();
     let excerpt = preamble || attributes.description || "";
 
     const authorlist = []
